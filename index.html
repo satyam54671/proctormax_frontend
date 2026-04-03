@@ -346,9 +346,8 @@
 
     <script>
         // --- ⚙️ CONFIGURATION FOR SPLIT ARCHITECTURE ---
-        // 1. If running unified (like on HF), leave empty string.
-        // 2. If using Render/Railway backend, paste the full URL below:
-        const RENDER_BASE = ""; // Example: "https://your-app.onrender.com"
+        // CONNECTED TO HUGGING FACE BACKEND 🚀
+        const RENDER_BASE = "https://raj54671-proctormax-backend.hf.space"; 
         
         const API = RENDER_BASE ? `${RENDER_BASE}/analyze` : (window.location.origin + "/analyze");
         const VIOLATION = RENDER_BASE ? `${RENDER_BASE}/violation` : (window.location.origin + "/violation");
