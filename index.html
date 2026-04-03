@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ProctorMax | AI Integrity Platform</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800;900&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-gradient: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --bg: #0f172a;
+            --card-bg: rgba(30, 41, 59, 0.7);
+            --border: rgba(255, 255, 255, 0.1);
+            --text: #f8fafc;
+            --text-muted: #94a3b8;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: radial-gradient(circle at top left, #1e1b4b 0%, #0f172a 100%);
+            color: var(--text);
+            margin: 0;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        /* Start Screen */
+        #startScreen {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--bg);
+            z-index: 2000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .start-card {
+            max-width: 500px;
+            padding: 48px;
+            text-align: center;
+            border-radius: 32px;
+            background: var(--card-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--border);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        .btn-start {
+            background: var(--primary-gradient);
+            color: white;
+            border: none;
+            padding: 16px 48px;
+            border-radius: 16px;
+            font-weight: 700;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 24px;
+        }
+        .btn-start:hover { transform: scale(1.05); box-shadow: 0 0 30px rgba(99, 102, 241, 0.4); }
+
+        /* Navbar */
+        .nav {
+            height: 72px;
+            padding: 0 32px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .timer-box {
+            background: rgba(239, 68, 68, 0.15);
+            color: #f87171;
+            padding: 8px 16px;
+            border-radius: 12px;
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 700;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        .main {
+            display: flex;
+            flex: 1;
+            padding: 24px;
+            gap: 24px;
+            overflow: hidden;
+        }
+
+        .glass-pane {
+            background: var(--card-bg);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* Question Sidebar */
+        .q-sidebar { width: 340px; padding: 32px; overflow-y: auto; }
+        .q-tag { color: var(--primary); font-weight: 800; font-size: 0.75rem; text-transform: uppercase; margin-bottom: 12px; display: block;}
+        .q-title { font-size: 1.75rem; font-weight: 800; margin: 0 0 20px; line-height: 1.2; }
+        .q-desc { color: var(--text-muted); line-height: 1.7; font-size: 0.95rem; }
+
+        .q-item { 
+            padding: 16px; margin-top: 12px; border-radius: 16px; background: rgba(255,255,255,0.03); 
+            cursor: pointer; border: 1px solid transparent; transition: 0.2s;
+        }
+        .q-item:hover { background: rgba(255,255,255,0.08); }
+        .q-item.active { border-color: var(--primary); background: rgba(99, 102, 241, 0.1); }
+
+        /* Code Editor */
+        .editor-container { flex: 1; display: flex; flex-direction: column; }
+        .editor-top { height: 48px; background: rgba(0,0,0,0.2); display: flex; align-items: center; padding: 0 20px; font-size: 0.8rem; color: var(--text-muted); }
+        #codeEditor { 
+            flex: 1; background: transparent; color: #fff; padding: 32px; border: none; outline: none;
+            font-family: 'JetBrains Mono', monospace; font-size: 16px; line-height: 1.6; resize: none;
+        }
+
+        /* Monitoring */
+        .proctor-panel { width: 320px; display: flex; flex-direction: column; gap: 20px; }
+        .cam-box { 
+            border-radius: 20px; overflow: hidden; position: relative; background: #000;
+            border: 1px solid var(--border); aspect-ratio: 4/3;
+        }
+        video { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
+        
+        .alert-ov { 
+            position: absolute; top: 12px; left: 12px; background: var(--danger); 
+            padding: 4px 10px; border-radius: 6px; font-size: 10px; font-weight: 950; display: none;
+            box-shadow: 0 0 20px var(--danger);
+        }
+
+        .metrics { padding: 24px; display: flex; flex-direction: column; gap: 20px; }
+        .score-box { text-align: center; }
+        .score-val { font-size: 4.5rem; font-weight: 900; background: var(--primary-gradient); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; line-height: 1; }
+        
+        /* Suspicion Meter */
+        .suspicion-meta { display: flex; justify-content: space-between; font-size: 0.7rem; font-weight: 800; color: var(--text-muted); margin-bottom: 8px; }
+        .meter-bg { height: 6px; background: rgba(255,255,255,0.05); border-radius: 10px; overflow: hidden; }
+        .meter-fill { height: 100%; background: var(--danger); width: 0%; transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 0 10px var(--danger); }
+
+        .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .stat-chip { background: rgba(255,255,255,0.03); padding: 12px; border-radius: 12px; border: 1px solid var(--border); }
+        .stat-title { font-size: 0.65rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; margin-bottom: 4px; }
+        .stat-node { font-size: 0.9rem; font-weight: 700; color: #fff; }
+
+        /* Warning Modal */
+        #warningModal {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+            background: rgba(15, 23, 42, 0.9); z-index: 4000;
+            display: none; justify-content: center; align-items: center; backdrop-filter: blur(8px);
+        }
+        .warn-card {
+            background: #1e293b; width: 420px; padding: 40px; border-radius: 28px; text-align: center;
+            border: 2px solid var(--danger); box-shadow: 0 0 50px rgba(239, 68, 68, 0.3);
+            animation: shake 0.4s ease;
+        }
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-10px); } 75% { transform: translateX(10px); } }
+
+        @keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+
+<body>
+    <!-- Start Screen -->
+    <div id="startScreen">
+        <div class="start-card">
+            <div style="width: 64px; height: 64px; background: var(--primary-gradient); border-radius: 20px; margin: 0 auto 32px; display: flex; align-items: center; justify-content: center; box-shadow: 0 10px 20px rgba(99, 102, 241, 0.3);">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="white"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z"/></svg>
+            </div>
+            <h1 style="font-size: 2.25rem; font-weight: 900; margin: 0 0 16px;">Secure Pro</h1>
+            <p style="color: var(--text-muted); line-height: 1.6; margin-bottom: 32px;">Initializing high-integrity examination protocol. AI Monitoring will be active upon start.</p>
+            <div style="text-align: left; background: rgba(255,255,255,0.03); padding: 24px; border-radius: 20px; border: 1px solid var(--border);">
+                <div style="margin-bottom: 12px; display: flex; gap: 12px; align-items: center;">
+                    <div style="width: 8px; height: 8px; background: var(--success); border-radius: 50%;"></div>
+                    <span style="font-size: 0.9rem; font-weight: 600;">Environmental Check Required</span>
+                </div>
+                <div style="display: flex; gap: 12px; align-items: center;">
+                    <div style="width: 8px; height: 8px; background: var(--success); border-radius: 50%;"></div>
+                    <span style="font-size: 0.9rem; font-weight: 600;">System Camera & Mic Verification</span>
+                </div>
+            </div>
+            <button class="btn-start" onclick="launchExam()">Verify & Start</button>
+        </div>
+    </div>
+
+    <!-- Nav -->
+    <div class="nav">
+        <div style="display: flex; align-items: center; gap: 40px;">
+            <div style="font-size: 1.5rem; font-weight: 950; letter-spacing: -1px; display: flex; align-items: center; gap: 8px;">
+                <div style="width: 10px; height: 24px; background: var(--primary-gradient); border-radius: 4px;"></div>
+                PROCTOR<span style="color: var(--text-muted)">MAX</span>
+            </div>
+            <div style="height: 24px; width: 1px; background: var(--border);"></div>
+            <div style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted);">CODE_CHALLENGE_24</div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 24px;">
+            <div class="timer-box" id="timer">60:00</div>
+            <button class="btn-start" style="margin:0; padding: 12px 32px; font-size: 0.9rem;" onclick="endInterview()">Finish Exam</button>
+        </div>
+    </div>
+
+    <div class="main" id="examMain" style="display: none;">
+        <!-- Question Pane -->
+        <div class="glass-pane q-sidebar">
+            <div id="qContent">
+                <span class="q-tag">Question 01</span>
+                <h1 class="q-title">Longest Palindrome</h1>
+                <p class="q-desc">Return the longest palindromic substring in the given string <b>s</b>.</p>
+            </div>
+            <div style="margin-top: auto; padding-top: 32px; border-top: 1px solid var(--border);">
+                <div style="font-size: 0.7rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase;">Question List</div>
+                <div id="qList"></div>
+            </div>
+        </div>
+
+        <!-- Editor -->
+        <div class="glass-pane editor-container">
+            <div class="editor-top">PY_3.10 • solution.py</div>
+            <textarea id="codeEditor" spellcheck="false"></textarea>
+        </div>
+
+        <!-- Proctor -->
+        <div class="proctor-panel">
+            <div class="glass-pane" style="height: auto;">
+                <div class="cam-box">
+                    <video id="webcam" autoplay playsinline muted></video>
+                    <div class="alert-ov" id="alertActive">INTEGRITY BREACH</div>
+                </div>
+                <div class="metrics">
+                    <div class="score-box">
+                        <div class="q-tag" style="text-align: center; width: 100%;">Security Trust Index</div>
+                        <div class="score-val" id="scoreVal">100</div>
+                    </div>
+                    
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: -10px;">
+                        <div class="stat-chip" style="padding: 10px;">
+                            <div class="stat-title">Orient [Yaw]</div>
+                            <div class="stat-node" id="yawVal">1.0</div>
+                        </div>
+                        <div class="stat-chip" style="padding: 10px;">
+                            <div class="stat-title">Tilt [Pitch]</div>
+                            <div class="stat-node" id="pitchVal">0.0</div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <div class="suspicion-meta">
+                            <span>FOCUS HEALTH</span>
+                            <span id="trustVal">100%</span>
+                        </div>
+                        <div class="meter-bg"><div class="meter-fill" id="meterFill" style="background:var(--success); width:100%;"></div></div>
+                    </div>
+
+                    <div class="stat-grid" style="grid-template-columns: repeat(3, 1fr);">
+                        <div class="stat-chip">
+                            <div class="stat-title">EYE (100)</div>
+                            <div class="stat-node" id="eyeScoreVal">--</div>
+                        </div>
+                        <div class="stat-chip">
+                            <div class="stat-title">LIP (100)</div>
+                            <div class="stat-node" id="lipScoreVal">--</div>
+                        </div>
+                        <div class="stat-chip">
+                            <div class="stat-title">EMO (100)</div>
+                            <div class="stat-node" id="emoScoreVal">100</div>
+                        </div>
+                    </div>
+
+                    <div style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2); padding: 12px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center;">
+                         <span style="font-size: 0.65rem; font-weight: 900; color: var(--danger);">SYSTEM WARNINGS:</span>
+                         <span id="strikeVal" style="font-weight: 950; color: var(--danger);">0 / 3</span>
+                    </div>
+
+                    <div id="vBox">
+                        <div class="v-toast" id="vGaze">⚠️ Unusual Gaze Pattern Detected</div>
+                        <div class="v-toast" id="vDown" style="background: rgba(245, 158, 11, 0.1); color: var(--warning); border-color: rgba(245, 158, 11, 0.2);">⚠️ Suspicious Note Reading</div>
+                        <div class="v-toast" id="vFace">👥 Multiple Persons in Frame</div>
+                        <div class="v-toast" id="vVoice" style="background: rgba(99, 102, 241, 0.1); color: var(--primary); border-color: rgba(99, 102, 241, 0.2);">🎙️ Voice Activity Detected</div>
+                        <div class="v-toast" id="ambNotice" style="background: rgba(168, 85, 247, 0.1); color: #a855f7; border-color: rgba(168, 85, 247, 0.2);">⚠️ Ambiguous Behavior (Head Pose)</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Warning Modal -->
+    <div id="warningModal">
+        <div class="warn-card">
+            <h2 id="warnTitle" style="color: var(--danger); font-weight: 950; margin-bottom: 12px;">SECURITY WARNING</h2>
+            <p id="warnMsg" style="color: #fff; font-size: 0.95rem; line-height: 1.6; margin-bottom: 32px;"></p>
+            <button class="btn-start" onclick="closeWarning()" style="width:100%; margin:0;">I Understand</button>
+        </div>
+    </div>
+    <div id="reportOverlay" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); display:none; justify-content:center; align-items:center; z-index:3000; backdrop-filter:blur(20px);">
+        <div style="background:var(--bg); width:460px; padding:48px; border-radius:32px; text-align:center; border: 1px solid var(--border); box-shadow: 0 40px 100px rgba(0,0,0,0.8);">
+            <div style="width: 80px; height: 80px; background: rgba(16, 185, 129, 0.1); border-radius: 40px; border: 2px solid var(--success); display: flex; align-items: center; justify-content: center; margin: 0 auto 24px;">
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="var(--success)"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg>
+            </div>
+            <h2 style="font-size: 2rem; font-weight: 900; margin: 0 0 8px;">Analysis Complete</h2>
+            <p style="color: var(--text-muted); margin-bottom: 32px;">Evaluation integrity report generated.</p>
+            
+            <div style="display: flex; flex-direction: column; gap: 24px; background: rgba(255,255,255,0.03); padding: 32px; border-radius: 24px; border: 1px solid var(--border); margin-bottom: 32px;">
+                <div style="text-align: center;">
+                    <div style="font-size: 0.75rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; margin-bottom: 12px; letter-spacing: 2px;">Final Integrity Index</div>
+                    <div style="font-size: 5rem; font-weight: 950; letter-spacing:-4px; background:var(--primary-gradient); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; line-height: 1;" id="fScore">100</div>
+                </div>
+                
+                <div style="height: 1px; background: var(--border); width: 100%;"></div>
+                
+                <div style="display: flex; justify-content: space-between; font-weight: 700;">
+                    <span style="color: var(--text-muted);">Total Penalties:</span>
+                    <span style="color: var(--danger);" id="fPenalties">0</span>
+                </div>
+
+                <div style="display: flex; justify-content: space-between; font-weight: 700; font-size: 0.75rem; margin-top: 10px;">
+                    <div style="text-align: center;"><div style="color: var(--text-muted); margin-bottom: 4px;">EYE</div><div id="fEye">100/100</div></div>
+                    <div style="text-align: center;"><div style="color: var(--text-muted); margin-bottom: 4px;">LIP</div><div id="fLip">100/100</div></div>
+                    <div style="text-align: center;"><div style="color: var(--text-muted); margin-bottom: 4px;">EMO</div><div id="fEmo">100/100</div></div>
+                </div>
+                
+                <div style="background: rgba(255,255,255,0.05); padding: 12px; border-radius: 12px; font-weight: 800; font-size: 0.85rem;" id="trustVerdict">TRUST RATING: SECURE</div>
+
+                <div id="fViolations" style="text-align: left; font-size: 0.8rem; max-height: 150px; overflow-y: auto; color: var(--text-muted); line-height: 1.8;">
+                    <!-- Violations will be listed here -->
+                </div>
+            </div>
+
+            <div style="display:flex; gap:12px;">
+                <button class="btn-start" id="btnDownload" onclick="downloadReport()" style="width:100%; margin:0; background:rgba(255,255,255,0.1); border:1px solid var(--border); color: white;">Download Report</button>
+                <button class="btn-start" onclick="location.reload()" style="width:100%; margin:0;">End Session</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- ⚙️ CONFIGURATION FOR SPLIT ARCHITECTURE ---
+        // 1. If running unified (like on HF), leave empty string.
+        // 2. If using Render/Railway backend, paste the full URL below:
+        const RENDER_BASE = ""; // Example: "https://your-app.onrender.com"
+        
+        const API = RENDER_BASE ? `${RENDER_BASE}/analyze` : (window.location.origin + "/analyze");
+        const VIOLATION = RENDER_BASE ? `${RENDER_BASE}/violation` : (window.location.origin + "/violation");
+        
+        let examActive = false;
+        let lastVCount = 0;
+        let time = 3600;
+        let captureInt;
+        let globalData = { final_score: 100, integrity_penalty: 0, violations: [], eye_score: 100, lip_score: 100, emotion_score: 100, suspicion_level: 0 };
+
+        const qs = [
+            { id: "01", t: "Longest Palindrome", meta: "DP / String", d: "Find the longest substring in <b>s</b> that reads the same forwards and backwards.", c: "def longestPalindrome(s: str) -> str:\n    pass" },
+            { id: "02", t: "Intersection of Sets", meta: "Hashing", d: "Given two arrays, return an array of their intersection. Each element must be unique.", c: "def intersection(nums1, nums2):\n    pass" },
+            { id: "03", t: "Binary Search", meta: "Search", d: "Implement an O(log n) search to find target in sorted array <b>nums</b>.", c: "def search(nums, target):\n    pass" }
+        ];
+
+        function launchExam() {
+            document.getElementById('startScreen').style.display = 'none';
+            document.getElementById('examMain').style.display = 'flex';
+            startMedia(); startTimer(); initQs();
+            examActive = true;
+        }
+
+        function startTimer() {
+            setInterval(() => {
+                if(!examActive) return;
+                time--;
+                const m = Math.floor(time/60); const s = time%60;
+                document.getElementById('timer').innerText = `${m}:${s.toString().padStart(2,'0')}`;
+                if(time <= 0) endInterview();
+            }, 1000);
+        }
+
+        function initQs() {
+            const list = document.getElementById('qList');
+            qs.forEach((q, i) => {
+                const el = document.createElement('div');
+                el.className = 'q-item';
+                el.innerHTML = `<div style="font-size:0.6rem; font-weight:800; color:var(--text-muted)">Q${q.id}</div><div style="font-weight:700">${q.t}</div>`;
+                el.onclick = () => {
+                    document.querySelectorAll('.q-item').forEach(x => x.classList.remove('active'));
+                    el.classList.add('active'); loadQ(i);
+                };
+                list.appendChild(el);
+            });
+            loadQ(0); document.querySelector('.q-item').classList.add('active');
+        }
+
+        function loadQ(i) {
+            const q = qs[i];
+            document.getElementById('qContent').innerHTML = `
+                <span class="q-tag">Question ${q.id}</span>
+                <div style="font-size:0.65rem; color:var(--primary); font-weight:900; margin-bottom:8px;">${q.meta}</div>
+                <h1 class="q-title">${q.t}</h1>
+                <p class="q-desc">${q.d}</p>
+            `;
+            document.getElementById('codeEditor').value = q.c;
+        }
+
+        async function startMedia() {
+            const video = document.getElementById('webcam');
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({video:true, audio:true});
+                video.srcObject = stream;
+                setupAudio(stream);
+                captureInt = setInterval(processFrame, 500);
+            } catch(e) { alert("Media Access Error"); }
+        }
+
+        function setupAudio(stream) {
+            const actx = new AudioContext();
+            const an = actx.createAnalyser();
+            const source = actx.createMediaStreamSource(stream);
+            const script = actx.createScriptProcessor(2048, 1, 1);
+            source.connect(an); an.connect(script); script.connect(actx.destination);
+            script.onaudioprocess = () => {
+                if(!examActive) return;
+                const data = new Uint8Array(an.frequencyBinCount);
+                an.getByteFrequencyData(data);
+                const avg = data.reduce((a,b)=>a+b)/data.length;
+                if(avg > 30) { document.getElementById('vVoice').style.display='block'; report("speaking"); }
+                else { document.getElementById('vVoice').style.display='none'; }
+            }
+        }
+
+        let strikes = 0;
+        let lastFaceAlertTime = 0;
+        let lastNoteAlertTime = 0;
+
+        async function processFrame() {
+            if(!examActive) return;
+            const video = document.getElementById('webcam');
+            const canv = document.createElement('canvas');
+            canv.width = video.videoWidth; canv.height = video.videoHeight;
+            canv.getContext('2d').drawImage(video, 0, 0);
+            try {
+                const res = await fetch(API, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({image: canv.toDataURL('image/jpeg', 0.6)})});
+                if (!res.ok) throw new Error("Server Error");
+                const data = await res.json();
+                globalData = data; syncUI(data);
+                
+                // Intrusive Triggers (Only for clear, sustained breaches)
+                const now = Date.now();
+                if(data.number_of_faces > 1 && now - lastFaceAlertTime > 25000) {
+                    showWarning("SECURITY ALERT", "Multiple persons detected. Please ensure you are alone in a private space.");
+                    lastFaceAlertTime = now;
+                }
+                if(data.gaze_direction.includes('down') && now - lastNoteAlertTime > 45000) {
+                     showWarning("FOCUS ADVISORY", "Consistent downward gaze detected. Please maintain eye contact with the assessment screen.");
+                     lastNoteAlertTime = now;
+                }
+            } catch(e) {
+                console.error("Frame analysis failed:", e);
+            }
+        }
+
+        function showWarning(title, msg) {
+            if(!examActive) return;
+            strikes++;
+            document.getElementById('strikeVal').innerText = `${strikes} / 3`;
+            document.getElementById('warnTitle').innerText = title;
+            document.getElementById('warnMsg').innerText = msg;
+            document.getElementById('warningModal').style.display = 'flex';
+        }
+
+        function closeWarning() {
+            document.getElementById('warningModal').style.display = 'none';
+        }
+
+        function syncUI(d) {
+            if(!d) return;
+            document.getElementById('scoreVal').innerText = d.final_score ?? 0;
+            document.getElementById('eyeScoreVal').innerText = d.eye_score ?? 100;
+            document.getElementById('lipScoreVal').innerText = d.lip_score ?? 100;
+            document.getElementById('emoScoreVal').innerText = d.emotion_score ?? 100;
+            
+            // Spatial
+            document.getElementById('yawVal').innerText = d.yaw ?? 1.0;
+            document.getElementById('pitchVal').innerText = d.pitch ?? 0.0;
+            
+            // Trust Index (Inverse of Suspicion)
+            const suspicion = d.suspicion_level ?? 0;
+            const trust = Math.max(0, 100 - suspicion);
+            document.getElementById('trustVal').innerText = `${trust.toFixed(0)}%`;
+            const fill = document.getElementById('meterFill');
+            if(fill) {
+                fill.style.width = `${trust}%`;
+                fill.style.background = (trust > 70 && strikes < 2) ? 'var(--success)' : (trust > 40 ? 'var(--warning)' : 'var(--danger)');
+                fill.style.boxShadow = `0 0 10px ${fill.style.background}`;
+            }
+
+            // Indicators
+            const dir = d.gaze_direction || "";
+            document.getElementById('vGaze').style.display = ['left','right'].includes(dir) ? 'block' : 'none';
+            document.getElementById('vDown').style.display = dir.includes('down') ? 'block' : 'none';
+            document.getElementById('vFace').style.display = (d.number_of_faces ?? 0) > 1 ? 'block' : 'none';
+            document.getElementById('ambNotice').style.display = d.ambiguity_detected ? 'block' : 'none';
+            document.getElementById('alertActive').style.display = (d.integrity_penalty ?? 0) > 35 || strikes >= 2 ? 'block' : 'none';
+        }
+
+        async function report(type) { 
+            if(type === 'tab_switch' || type === 'window_blur') {
+                showWarning("BROWSER FLAG", "Tab switching and window blurring detected. This incident has been logged.");
+            }
+            try { fetch(VIOLATION, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({type})}); } catch(e) {}
+        }
+        
+        function endInterview() { 
+            examActive = false; 
+            clearInterval(captureInt); 
+            document.getElementById('reportOverlay').style.display='flex'; 
+            if(globalData) {
+                const s = Math.max(0, globalData.final_score - (strikes * 10)); // Extra penalty for strikes
+                document.getElementById('fScore').innerText = s;
+                document.getElementById('fPenalties').innerText = `-${globalData.integrity_penalty + (strikes * 10)}`;
+                document.getElementById('fEye').innerText = `${globalData.eye_score}/100`;
+                document.getElementById('fLip').innerText = `${globalData.lip_score}/100`;
+                document.getElementById('fEmo').innerText = `${globalData.emotion_score}/100`;
+                
+                const verdict = document.getElementById('trustVerdict');
+                if(s > 80 && strikes === 0) { verdict.innerText = "TRUST RATING: SECURE"; verdict.style.color = "var(--success)"; }
+                else if(s > 50 && strikes < 3) { verdict.innerText = "TRUST RATING: REVIEW REQUIRED"; verdict.style.color = "var(--warning)"; }
+                else { verdict.innerText = "TRUST RATING: COMPROMISED"; verdict.style.color = "var(--danger)"; }
+
+                const list = document.getElementById('fViolations');
+                if (globalData.violations && globalData.violations.length > 0) {
+                    list.innerHTML = "<b>VIOLATION LOG:</b><br>" + globalData.violations.map(v => `• <span style="color:#f8fafc">${v.reason}</span> (-${v.penalty})`).join('<br>');
+                } else {
+                    list.innerHTML = "<div style='text-align:center; width:100%; color:var(--success); font-weight:600;'>✓ No Integrity Violations Found</div>";
+                }
+            } 
+        }
+
+        function downloadReport() {
+            if(!globalData) return;
+            const content = `---- PROCTORMAX EVALUATION REPORT ----\n` + 
+                           `Final Integrity Score: ${globalData.final_score}/100\n` +
+                           `Eye Trust: ${globalData.eye_score}/100\n` +
+                           `Lip Trust: ${globalData.lip_score}/100\n` +
+                           `Emotion Trust: ${globalData.emotion_score}/100\n\n` +
+                           `Violations Detected:\n` +
+                           (globalData.violations.map(v => `- ${v.reason} (-${v.penalty})`).join('\n') || "None") +
+                           `\n\n-------------------------------------`;
+            const blob = new Blob([content], {type: 'text/plain'});
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url; a.download = 'ProctorMax_Report.txt'; a.click();
+        }
+
+        window.onblur = () => report('window_blur');
+        document.oncopy = () => report('copy_paste');
+        document.onpaste = () => report('copy_paste');
+        document.addEventListener('visibilitychange', () => { if(document.hidden) report('tab_switch'); });
+    </script>
+</body>
+</html>
